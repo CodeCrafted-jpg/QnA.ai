@@ -21,7 +21,7 @@ type ResourceType = "youtube" | "pdf" | "excel" | "file";
 
 type Stage = "idle" | "loading" | "done";
 
-export default function QuickLearn() {
+export default function AddResource() {
   const [resourceType, setResourceType] =
     useState<ResourceType>("youtube");
 
