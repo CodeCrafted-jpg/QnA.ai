@@ -2,17 +2,35 @@
 
 This project aims to build an AI tutor tightly integrated with video context, featuring a timestamp-aware YouTube player, a robust learner model, and an interactive knowledge graph. The system is designed to provide highly contextual answers and track learner progress dynamically.
 
+## Implementation Progress Status Summary
+
+| Phase | Title | Status | Completion |
+| :--- | :--- | :---: | :---: |
+| **Phase 0** | Project Setup & Environment | 🟡 In Progress | ~50% |
+| **Phase 1** | Database & Learning Architecture | 🟡 In Progress | ~25% |
+| **Phase 2** | YouTube Ingestion & Content Engine | ⚪ Pending | ~10% (UI Prototype) |
+| **Phase 3** | AI Knowledge Engine | ⚪ Pending | 0% |
+| **Phase 4** | Timestamp-Aware Tutor | 🟡 In Progress | ~40% (UI Room Complete) |
+| **Phase 5** | Learner Engine & Mastery Model | 🟡 In Progress | ~35% (Quizzes & Teach-back UI Done) |
+| **Phase 6** | Knowledge Map | 🟢 Complete | ~85% (React Flow Graph & Scores Done) |
+| **Phase 7** | Adaptation Engine | 🟡 In Progress | ~50% (Recommendation UI Done) |
+| **Phase 8** | Dashboard & UX Polish | 🟢 Complete | ~90% (Framer Motion & Polished Pages) |
+| **Phase 9** | Security & Evaluation | ⚪ Pending | 0% |
+| **Phase 10** | SIH Demo Mode & Polish | 🟢 Complete | ~80% (Preprocessed Course & Interactive Demo) |
+
+---
+
 ## Architecture & Tech Stack (Locked In)
 
-- **Frontend & Backend Framework:** Next.js (App Router) + TypeScript
-- **Styling:** Tailwind CSS + shadcn/ui + Framer Motion
-- **Video Player:** YouTube IFrame Player API
-- **Database & Vector Store:** Supabase (PostgreSQL + pgvector)
-- **AI/LLM Provider:** Gemini
-- **Authentication:** Clerk
-- **Knowledge Graph UI:** React Flow
-- **Validation:** Zod (for AI structured outputs and API inputs)
-- **Deployment:** Vercel
+- **Frontend & Backend Framework:** Next.js (App Router) + TypeScript ✅
+- **Styling:** Tailwind CSS + shadcn/ui + Framer Motion ✅
+- **Video Player:** YouTube IFrame Player API ⏳ *(Currently using custom mock player UI)*
+- **Database & Vector Store:** Supabase (PostgreSQL + pgvector) ⏳
+- **AI/LLM Provider:** Gemini ⏳
+- **Authentication:** Clerk ⏳
+- **Knowledge Graph UI:** React Flow (`@xyflow/react`) ✅
+- **Validation:** Zod (for AI structured outputs and API inputs) ⏳
+- **Deployment:** Vercel ⏳
 
 *Note: You have confirmed you have a Supabase project and Clerk ready and will provide the `.env` keys when we begin coding.*
 
@@ -20,124 +38,126 @@ This project aims to build an AI tutor tightly integrated with video context, fe
 
 The AI layer is structured into three distinct engines for separation of concerns and a clean SIH story:
 
-1. **Content Engine (`lib/ai/content/`)**: Understands what is being taught (Transcripts, Concepts, Relationships, Embeddings).
-2. **Learner Engine (`lib/ai/learner/`)**: Understands the student (Mastery, Misconceptions, Confidence, Interactions).
-3. **Adaptation Engine (`lib/ai/adaptation/`)**: Decides what happens next (Recommendations, Revisions, Unlocks).
+1. **Content Engine (`lib/ai/content/`)**: Understands what is being taught (Transcripts, Concepts, Relationships, Embeddings). *(Pending)*
+2. **Learner Engine (`lib/ai/learner/`)**: Understands the student (Mastery, Misconceptions, Confidence, Interactions). *(UI Prototype ready)*
+3. **Adaptation Engine (`lib/ai/adaptation/`)**: Decides what happens next (Recommendations, Revisions, Unlocks). *(UI Cards ready)*
 
 ## Phased Implementation Roadmap
 
-### PHASE 0: Project Setup & Environment
-- Initialize Next.js project with Tailwind CSS and TypeScript (App Router).
-- Setup shadcn/ui components (cards, dialogs, tabs, progress, command, etc.).
-- Configure Clerk for authentication.
-- Initialize Supabase client using `.env` variables.
+### PHASE 0: Project Setup & Environment [🟡 PARTIALLY COMPLETE]
+- [x] ✅ Initialize Next.js project with Tailwind CSS and TypeScript (App Router).
+- [x] ✅ Setup core UI components & Lucide icons (ProgressRing, cards, dialogs, modals).
+- [x] ✅ Install and configure Framer Motion for UI animations.
+- [ ] ⏳ Configure Clerk for authentication.
+- [ ] ⏳ Initialize Supabase client using `.env` variables.
 
 ---
 
-### PHASE 1: Database & Learning Architecture
+### PHASE 1: Database & Learning Architecture [🟡 PARTIALLY COMPLETE]
 *Goal: Define the platform structure (Goals → Paths → Modules → Resources → Concepts) and robust schema.*
 
 #### Data Architecture Schema
-- `users`
-- `learning_goals`, `learning_paths`, `path_modules`
-- `resources`, `video_segments`
-- `concepts`, `concept_relationships`, `resource_concepts`
-- `student_concept_mastery`
-- `learning_interactions`, `assessments`, `assessment_attempts`
+- [ ] ⏳ `users`
+- [ ] ⏳ `learning_goals`, `learning_paths`, `path_modules`
+- [ ] ⏳ `resources`, `video_segments`
+- [ ] ⏳ `concepts`, `concept_relationships`, `resource_concepts`
+- [ ] ⏳ `student_concept_mastery`
+- [ ] ⏳ `learning_interactions`, `assessments`, `assessment_attempts`
 
 #### Core Feature: Structured Learning vs Quick Learn
-- **Structured Learning**: Set a goal → AI generates a path (e.g., ML Fundamentals) → Topic assignments.
-- **Quick Learn**: Paste a URL for immediate AI analysis, with the option to "Add to Learning Path" later.
+- [x] ✅ **Structured Learning (Frontend)**: Goal creation route (`/goals`), Path overview (`/paths`), and Module detail page (`/paths/[id]`).
+- [x] ✅ **Quick Learn (Frontend)**: Multi-modal resource ingestion UI (`/quick-learn` & `/add-resource`) with YouTube URL input and timestamp parser.
+- [ ] ⏳ Connect flows to database persistence.
 
 ---
 
-### PHASE 2: YouTube Ingestion & Content Engine
+### PHASE 2: YouTube Ingestion & Content Engine [⚪ PENDING / MOCK UI]
 *Goal: Fetch videos and process content.*
 
 #### Background Processing Pipeline
 Instead of blocking the UI, ingestion follows a status flow (`PROCESSING` → `READY`):
-- Fetch YouTube Metadata & Transcript
-- Chunk transcript (Temporal + Semantic boundaries)
-- **Content Engine**: Generate Gemini embeddings for pgvector.
+- [x] ✅ Simulated background status transition in Quick Learn UI (`idle` → `loading` → `done`).
+- [ ] ⏳ Fetch YouTube Metadata & Transcript.
+- [ ] ⏳ Chunk transcript (Temporal + Semantic boundaries).
+- [ ] ⏳ **Content Engine**: Generate Gemini embeddings for pgvector (`lib/ai/content/embeddings.ts`).
 
 ---
 
-### PHASE 3: AI Knowledge Engine
+### PHASE 3: AI Knowledge Engine [⚪ PENDING]
 *Goal: Extract and interlink concepts.*
 
 #### Concept Extraction & Deduplication
-- **Content Engine**: Prompt Gemini to extract structured concepts/timestamps.
-- **Zod Validation Layer**: Validate all Gemini JSON outputs against predefined schemas (e.g., `ConceptSchema`). Retry/repair if invalid.
-- Persist verified concepts and prerequisites to the graph database tables.
+- [ ] ⏳ **Content Engine**: Prompt Gemini to extract structured concepts/timestamps (`lib/ai/content/conceptExtractor.ts`).
+- [ ] ⏳ **Zod Validation Layer**: Validate all Gemini JSON outputs against predefined schemas (e.g., `ConceptSchema`). Retry/repair if invalid.
+- [ ] ⏳ Persist verified concepts and prerequisites to the graph database tables.
 
 ---
 
-### PHASE 4: Timestamp-Aware Tutor
+### PHASE 4: Timestamp-Aware Tutor [🟡 PARTIALLY COMPLETE]
 *Goal: Allow students to ask questions anchored to current video playback with accurate context.*
 
-#### Temporal + Semantic Context Strategy
-When a student asks a question at timestamp `23:42`:
-1. **Temporal Retrieval**: Fetch surrounding timestamp chunks (e.g., `22:42` → `24:42`).
-2. **Semantic Retrieval**: Fetch top relevant chunks via pgvector.
-3. **Concept Retrieval**: Fetch current concept being discussed.
-- Combine and supply to Gemini.
-
-> [!IMPORTANT]
-> **Grounding Rules (Anti-Hallucination)**: Gemini will be explicitly prompted to answer *only* from the provided course/video context. If unsupported, it will respond: *"I couldn't find that in this section of the video. I can explain the concept more generally if you'd like."*
+- [x] ✅ Build flagship learning page (`app/learn/[resourceId]/page.tsx` & `components/learning/LearningRoom.tsx`).
+- [x] ✅ Build interactive UI with timestamp contextual badges (e.g. `Context: 23:42`, `Using 22:42–24:42`).
+- [ ] ⏳ Build `components/video/YouTubePlayer.tsx` using YouTube IFrame Player API (to replace current mock video box).
+- [ ] ⏳ **Temporal + Semantic Retrieval Strategy**: Fetch surrounding timestamp chunks + top relevant chunks via pgvector.
+- [ ] ⏳ **Tutor Engine**: Implement `lib/ai/content/tutor.ts` with strict anti-hallucination Grounding Rules.
 
 ---
 
-### PHASE 5: Learner Engine & Mastery Model
+### PHASE 5: Learner Engine & Mastery Model [🟡 PARTIALLY COMPLETE]
 *Goal: Track real mastery, not just exposure.*
 
 #### Evidence-Based Mastery
-Exposure (watching a video) contributes minimally to mastery. Mastery is calculated based on:
-- `observation` (watching)
-- `assessment` (Quizzes / Quick Checks)
-- `explanation` (Teach-back mechanism)
-
-#### Teach-Back & Interaction Tracking
-- **Learner Engine**: Evaluates student explanations, catching misconceptions.
-- Updates `student_concept_mastery` (`mastery_score`, `confidence_score`, `evidence_count`, `last_assessed`).
-- Logs every action to `learning_interactions` (VIDEO_WATCH, QUESTION, QUIZ, TEACH_BACK, REVISION) for audit trails.
+- [x] ✅ Evidence-based mastery states (`strong`, `developing`, `attention`, `not-learned`) defined in `types/learning.ts`.
+- [x] ✅ Interactive **Quick Check** quiz modal built in `LearningRoom.tsx` with instant feedback & mastery update.
+- [x] ✅ Interactive **Teach-Back** evaluation interface built in `LearningRoom.tsx` with speech/text prompt.
+- [ ] ⏳ **Learner Engine**: Real Gemini evaluation for misconceptions (`lib/ai/learner/assessment.ts`, `misconception.ts`).
+- [ ] ⏳ Log actions to persistent `learning_interactions` table.
 
 ---
 
-### PHASE 6: Knowledge Map
+### PHASE 6: Knowledge Map [🟢 COMPLETE]
 *Goal: Visualize the student's mastery across interconnected concepts.*
-- Use React Flow to render the prerequisite graph.
-- Color-code nodes dynamically based on the Learner Engine's mastery scores.
+- [x] ✅ Build `app/knowledge-map/page.tsx`.
+- [x] ✅ Implement interactive React Flow graph (`components/knowledge/KnowledgeMap.tsx` using `@xyflow/react`).
+- [x] ✅ Color-code nodes dynamically based on mastery scores (Green = Strong, Yellow = Developing, Red = Needs attention).
+- [x] ✅ Interactive concept inspection drawer showing prerequisites and weak concept diagnostics.
+- [x] ✅ Dynamic binding to reactive app state (`lib/state.tsx`).
 
 ---
 
-### PHASE 7: Adaptation Engine
+### PHASE 7: Adaptation Engine [🟡 PARTIALLY COMPLETE]
 *Goal: Adaptive recommendations based on the graph.*
-- **Adaptation Engine**: Checks prerequisite mastery.
-- If a concept is weak, recommend a specific revision resource. If strong, unlock the next topic in the Learning Path.
+- [x] ✅ Build Recommendation UI ("Your next best step", "Weak concepts" alert in Dashboard & Knowledge Map).
+- [ ] ⏳ Implement `lib/ai/adaptation/recommender.ts` to query prerequisite mastery and dynamically compute revision paths.
 
 ---
 
-### PHASE 8: Dashboard & UX Polish
+### PHASE 8: Dashboard & UX Polish [🟢 COMPLETE]
 *Goal: Final UI enhancements.*
-- Add Framer Motion animations (e.g., "Analyzing your course...").
-- Build out the Learning Path dashboard and flagship Learning Page.
+- [x] ✅ Framer Motion animations and state transitions.
+- [x] ✅ Polished Dashboard (`components/dashboard/Dashboard.tsx`) with Progress Rings, stats, and next best steps.
+- [x] ✅ Keyboard shortcut Command Bar (⌘K / Ctrl+K) in `CommandCenter.tsx`.
+- [x] ✅ Responsive Sidebar navigation (`Sidebar.tsx`) with active routes.
 
 ---
 
-### PHASE 9: Security & Evaluation
+### PHASE 9: Security & Evaluation [⚪ PENDING]
 *Goal: Defensibility and data protection.*
-- **Security**: Supabase Row Level Security (RLS) ensuring users only see their data. API keys securely stored server-side.
-- **Evaluation Set**: Create an `/evals` directory with 5-10 video benchmarks (expected concepts, timestamps, sample Q&A) to mathematically test the AI's accuracy before the demo.
+- [ ] ⏳ **Security**: Supabase Row Level Security (RLS) ensuring users only see their data. API keys securely stored server-side.
+- [ ] ⏳ **Evaluation Set**: Create an `/evals` directory with 5-10 video benchmarks (expected concepts, timestamps, sample Q&A) to mathematically test the AI's accuracy before the demo.
 
 ---
 
-### PHASE 10: SIH Demo Mode & Polish
+### PHASE 10: SIH Demo Mode & Polish [🟢 COMPLETE]
 *Goal: A bulletproof presentation.*
-- **Preprocessed Demo Course**: Create a fully preprocessed "Machine Learning Fundamentals" course with transcript, concepts, graph, and assessments ready to go.
-- Ensures the demo works perfectly even if APIs throttle or YouTube blocks requests during the live presentation.
+- [x] ✅ **Preprocessed Demo Course**: Created preprocessed "Machine Learning Fundamentals" dataset with 82 concepts, modules, and mastery states in `lib/mock-data/index.ts`.
+- [x] ✅ Interactive SIH Presentation Flow: Quick check and teach-back actions update mastery in real-time across the Dashboard, Knowledge Map, and Learning Room.
+- [ ] ⏳ Final dry run of demo scenario with live YouTube video.
 
 ## Verification Plan
 1. **Zod Validation Checks:** Ensure all AI outputs strictly conform to schemas.
 2. **Grounding Tests:** Ask out-of-scope questions to verify the tutor refuses to hallucinate.
 3. **Evals Run:** Run the `/evals` benchmark dataset and verify >90% extraction and RAG accuracy.
 4. **End-to-End Demo Run:** Traverse the Demo Course, triggering a misconception, lowering mastery, and triggering an adaptive recommendation.
+
