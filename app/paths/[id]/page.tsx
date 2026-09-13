@@ -1,2 +1,111 @@
-import Link from "next/link";import {ArrowLeft,ArrowRight,BookOpen,CheckCircle2,CircleAlert,LockKeyhole} from "lucide-react";import {pathModules} from "@/lib/mock-data";import {ProgressRing} from "@/components/common/ProgressRing";
-export default function PathDetail(){return <div className="mx-auto max-w-6xl px-6 py-8 lg:px-10"><Link href="/paths" className="inline-flex items-center gap-2 text-sm text-neutral-500"><ArrowLeft size={15}/>Learning Paths</Link><header className="mt-7 flex items-end justify-between gap-6"><div><div className="eyebrow text-neutral-400">Machine Learning</div><h1 className="mt-2 text-3xl font-semibold">Beginner → Intermediate</h1><p className="mt-1 text-neutral-500">A guided path that adapts around your understanding.</p></div><ProgressRing value={68} label="68%"/></header><div className="mt-8 space-y-4">{pathModules.map((m,i)=><section key={m.n} className={`surface p-5 ${i===3?'ring-1 ring-[#dcebe4]':''}`}><div className="flex items-center gap-4"><div className="grid h-10 w-10 place-items-center rounded-full bg-neutral-100 font-semibold text-sm">{m.s==='Completed'?<CheckCircle2 size={18} className="text-[var(--accent)]"/>:m.s==='Locked'?<LockKeyhole size={16} className="text-neutral-400"/>:m.n}</div><div className="flex-1"><div className="text-xs text-neutral-400">Module {m.n}</div><h2 className="font-semibold">{m.t}</h2></div><div className="text-sm text-neutral-500">{m.s}</div>{i===3&&<Link href="/learn/linear-regression" className="hidden rounded-xl bg-black px-3 py-2 text-xs font-semibold text-white sm:block">Open</Link>}</div>{(i===1||i===3)&&<div className="mt-5 border-t border-[var(--line)] pt-5"><div className="mb-3 text-xs font-semibold uppercase tracking-wider text-neutral-400">Topics</div><div className="grid gap-3 sm:grid-cols-2"><Link href="/learn/linear-regression" className="rounded-xl border border-[var(--line)] p-4 hover:bg-neutral-50"><div className="flex items-center justify-between"><span className="font-medium">Linear Regression</span><span className="text-xs text-[var(--accent)]">72%</span></div><div className="mt-2 text-xs text-neutral-500">Features · Labels · Cost Function · Gradient Descent</div><div className="mt-3 flex items-center gap-3 text-xs text-neutral-400"><BookOpen size={13}/>2 resources <CircleAlert size={13} className="text-[#c74a4a]"/>1 needs attention</div></Link><div className="rounded-xl border border-dashed border-[var(--line)] p-4"><div className="font-medium text-neutral-400">Classification</div><div className="mt-1 text-xs text-neutral-400">Unlocks after Linear Regression mastery improves.</div></div></div></div>}</section>)}</div><div className="mt-6 flex justify-end"><Link href="/knowledge-map" className="inline-flex items-center gap-2 rounded-xl border border-[var(--line)] bg-white px-4 py-2.5 text-sm font-medium">View Knowledge Map <ArrowRight size={15}/></Link></div></div>}
+import Link from "next/link";
+import {
+  ArrowLeft,
+  ArrowRight,
+  BookOpen,
+  CheckCircle2,
+  CircleAlert,
+  LockKeyhole,
+} from "lucide-react";
+import { pathModules } from "@/lib/mock-data";
+import { ProgressRing } from "@/components/common/ProgressRing";
+export default function PathDetail() {
+  return (
+    <div className="mx-auto max-w-6xl px-6 py-8 lg:px-10">
+      <Link
+        href="/paths"
+        className="inline-flex items-center gap-2 text-sm text-neutral-500"
+      >
+        <ArrowLeft size={15} />
+        Learning Paths
+      </Link>
+      <header className="mt-7 flex items-end justify-between gap-6">
+        <div>
+          <div className="eyebrow text-neutral-400">Machine Learning</div>
+          <h1 className="mt-2 text-3xl font-semibold">
+            Beginner → Intermediate
+          </h1>
+          <p className="mt-1 text-neutral-500">
+            A guided path that adapts around your understanding.
+          </p>
+        </div>
+        <ProgressRing value={68} label="68%" />
+      </header>
+      <div className="mt-8 space-y-4">
+        {pathModules.map((m, i) => (
+          <section
+            key={m.n}
+            className={`surface p-5 ${i === 3 ? "ring-1 ring-[#dcebe4]" : ""}`}
+          >
+            <div className="flex items-center gap-4">
+              <div className="grid h-10 w-10 place-items-center rounded-full bg-neutral-100 font-semibold text-sm">
+                {m.s === "Completed" ? (
+                  <CheckCircle2 size={18} className="text-[var(--accent)]" />
+                ) : m.s === "Locked" ? (
+                  <LockKeyhole size={16} className="text-neutral-400" />
+                ) : (
+                  m.n
+                )}
+              </div>
+              <div className="flex-1">
+                <div className="text-xs text-neutral-400">Module {m.n}</div>
+                <h2 className="font-semibold">{m.t}</h2>
+              </div>
+              <div className="text-sm text-neutral-500">{m.s}</div>
+              {i === 3 && (
+                <Link
+                  href="/learn/linear-regression"
+                  className="hidden rounded-xl bg-black px-3 py-2 text-xs font-semibold text-white sm:block"
+                >
+                  Open
+                </Link>
+              )}
+            </div>
+            {(i === 1 || i === 3) && (
+              <div className="mt-5 border-t border-[var(--line)] pt-5">
+                <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-neutral-400">
+                  Topics
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Link
+                    href="/learn/linear-regression"
+                    className="rounded-xl border border-[var(--line)] p-4 hover:bg-neutral-50"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">Linear Regression</span>
+                      <span className="text-xs text-[var(--accent)]">72%</span>
+                    </div>
+                    <div className="mt-2 text-xs text-neutral-500">
+                      Features · Labels · Cost Function · Gradient Descent
+                    </div>
+                    <div className="mt-3 flex items-center gap-3 text-xs text-neutral-400">
+                      <BookOpen size={13} />2 resources{" "}
+                      <CircleAlert size={13} className="text-[#c74a4a]" />1
+                      needs attention
+                    </div>
+                  </Link>
+                  <div className="rounded-xl border border-dashed border-[var(--line)] p-4">
+                    <div className="font-medium text-neutral-400">
+                      Classification
+                    </div>
+                    <div className="mt-1 text-xs text-neutral-400">
+                      Unlocks after Linear Regression mastery improves.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </section>
+        ))}
+      </div>
+      <div className="mt-6 flex justify-end">
+        <Link
+          href="/knowledge-map"
+          className="inline-flex items-center gap-2 rounded-xl border border-[var(--line)] bg-white px-4 py-2.5 text-sm font-medium"
+        >
+          View Knowledge Map <ArrowRight size={15} />
+        </Link>
+      </div>
+    </div>
+  );
+}

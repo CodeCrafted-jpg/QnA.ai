@@ -1,1 +1,4 @@
-import {LearningRoom} from "@/components/learning/LearningRoom";export default function Page(){return <LearningRoom/>}
+import { LearningRoom } from "@/components/learning/LearningRoom";
+export default function Page() {
+  return <LearningRoom />;
+}

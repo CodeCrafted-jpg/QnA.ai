@@ -1,2 +1,58 @@
-"use client";import {useState} from "react";import {ArrowRight,BrainCircuit,Check} from "lucide-react";import Link from "next/link";
-export default function Goals(){const [goal,setGoal]=useState('');const [saved,setSaved]=useState(false);return <div className="mx-auto max-w-3xl px-6 py-12 lg:px-10"><div className="eyebrow text-neutral-400">Learning goal</div><h1 className="mt-2 text-4xl font-semibold tracking-tight">What do you want to learn?</h1><p className="mt-2 text-neutral-500">Create a goal and we’ll shape a path around it. This prototype uses local mock state.</p><div className="surface mt-8 p-6"><label className="text-sm font-semibold">Your goal</label><textarea value={goal} onChange={e=>setGoal(e.target.value)} placeholder="e.g. Become confident building machine learning models" rows={5} className="mt-3 w-full resize-none rounded-xl border border-[var(--line)] bg-[#fbfbf8] p-4 outline-none focus:ring-2 focus:ring-black/10"/><button onClick={()=>setSaved(true)} disabled={!goal.trim()} className="mt-4 inline-flex items-center gap-2 rounded-xl bg-black px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">{saved?<><Check size={16}/>Goal saved</>:<>Build my path <ArrowRight size={16}/></>}</button>{saved&&<div className="mt-5 flex items-center gap-3 rounded-xl bg-[#edf6f1] p-4 text-sm text-[#1f7a5a]"><BrainCircuit size={18}/><span>Nice. Your mock path is ready — continue with the Machine Learning demo.</span><Link href="/paths/ml" className="ml-auto font-semibold underline">Open path</Link></div>}</div></div>}
+"use client";
+import { useState } from "react";
+import { ArrowRight, BrainCircuit, Check } from "lucide-react";
+import Link from "next/link";
+export default function Goals() {
+  const [goal, setGoal] = useState("");
+  const [saved, setSaved] = useState(false);
+  return (
+    <div className="mx-auto max-w-3xl px-6 py-12 lg:px-10">
+      <div className="eyebrow text-neutral-400">Learning goal</div>
+      <h1 className="mt-2 text-4xl font-semibold tracking-tight">
+        What do you want to learn?
+      </h1>
+      <p className="mt-2 text-neutral-500">
+        Create a goal and we’ll shape a path around it. This prototype uses
+        local mock state.
+      </p>
+      <div className="surface mt-8 p-6">
+        <label className="text-sm font-semibold">Your goal</label>
+        <textarea
+          value={goal}
+          onChange={(e) => setGoal(e.target.value)}
+          placeholder="e.g. Become confident building machine learning models"
+          rows={5}
+          className="mt-3 w-full resize-none rounded-xl border border-[var(--line)] bg-[#fbfbf8] p-4 outline-none focus:ring-2 focus:ring-black/10"
+        />
+        <button
+          onClick={() => setSaved(true)}
+          disabled={!goal.trim()}
+          className="mt-4 inline-flex items-center gap-2 rounded-xl bg-black px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {saved ? (
+            <>
+              <Check size={16} />
+              Goal saved
+            </>
+          ) : (
+            <>
+              Build my path <ArrowRight size={16} />
+            </>
+          )}
+        </button>
+        {saved && (
+          <div className="mt-5 flex items-center gap-3 rounded-xl bg-[#edf6f1] p-4 text-sm text-[#1f7a5a]">
+            <BrainCircuit size={18} />
+            <span>
+              Nice. Your mock path is ready — continue with the Machine Learning
+              demo.
+            </span>
+            <Link href="/paths/ml" className="ml-auto font-semibold underline">
+              Open path
+            </Link>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

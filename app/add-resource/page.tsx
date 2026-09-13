@@ -13,7 +13,6 @@ import {
   Plus,
   Sparkles,
   Upload,
-
 } from "lucide-react";
 import { useAppState } from "@/lib/state";
 
@@ -22,8 +21,7 @@ type ResourceType = "youtube" | "pdf" | "excel" | "file";
 type Stage = "idle" | "loading" | "done";
 
 export default function AddResource() {
-  const [resourceType, setResourceType] =
-    useState<ResourceType>("youtube");
+  const [resourceType, setResourceType] = useState<ResourceType>("youtube");
 
   const [url, setUrl] = useState("");
   const [timestamp, setTimestamp] = useState("");
@@ -77,9 +75,7 @@ export default function AddResource() {
     }
   };
 
-  const handleFileChange = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
 
     if (!file) return;
@@ -118,24 +114,20 @@ export default function AddResource() {
   };
 
   const canAnalyze =
-    resourceType === "youtube"
-      ? Boolean(url.trim())
-      : Boolean(selectedFile);
+    resourceType === "youtube" ? Boolean(url.trim()) : Boolean(selectedFile);
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-10 lg:px-10">
       {/* Header */}
-      <div className="eyebrow text-neutral-400">
-        Add resource
-      </div>
+      <div className="eyebrow text-neutral-400">Add resource</div>
 
       <h1 className="mt-2 text-4xl font-semibold tracking-tight">
         What do you want to learn from?
       </h1>
 
       <p className="mt-2 max-w-2xl text-neutral-500">
-        Add a video, document, spreadsheet, or any other learning
-        resource and turn it into an interactive learning experience.
+        Add a video, document, spreadsheet, or any other learning resource and
+        turn it into an interactive learning experience.
       </p>
 
       {/* Resource Type Selector */}
@@ -149,9 +141,7 @@ export default function AddResource() {
             <button
               key={resource.id}
               type="button"
-              onClick={() =>
-                handleResourceTypeChange(resource.id)
-              }
+              onClick={() => handleResourceTypeChange(resource.id)}
               className={`rounded-2xl border p-4 text-left transition ${
                 isActive
                   ? "border-black bg-black text-white"
@@ -160,23 +150,17 @@ export default function AddResource() {
             >
               <div
                 className={`grid h-10 w-10 place-items-center rounded-xl ${
-                  isActive
-                    ? "bg-white/10"
-                    : "bg-neutral-100"
+                  isActive ? "bg-white/10" : "bg-neutral-100"
                 }`}
               >
                 <Icon size={18} />
               </div>
 
-              <div className="mt-4 font-semibold">
-                {resource.label}
-              </div>
+              <div className="mt-4 font-semibold">{resource.label}</div>
 
               <div
                 className={`mt-1 text-xs ${
-                  isActive
-                    ? "text-white/60"
-                    : "text-neutral-400"
+                  isActive ? "text-white/60" : "text-neutral-400"
                 }`}
               >
                 {resource.description}
@@ -212,10 +196,7 @@ export default function AddResource() {
                 className="rounded-xl bg-black px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-40"
               >
                 {stage === "loading" ? (
-                  <LoaderCircle
-                    className="animate-spin"
-                    size={16}
-                  />
+                  <LoaderCircle className="animate-spin" size={16} />
                 ) : (
                   "Analyze"
                 )}
@@ -256,8 +237,8 @@ export default function AddResource() {
                 resourceType === "pdf"
                   ? ".pdf,application/pdf"
                   : resourceType === "excel"
-                  ? ".xlsx,.xls,.csv"
-                  : undefined
+                    ? ".xlsx,.xls,.csv"
+                    : undefined
               }
             />
 
@@ -272,9 +253,7 @@ export default function AddResource() {
 
               {selectedFile ? (
                 <>
-                  <div className="mt-4 font-semibold">
-                    {selectedFile.name}
-                  </div>
+                  <div className="mt-4 font-semibold">{selectedFile.name}</div>
 
                   <div className="mt-1 text-xs text-neutral-400">
                     Click to choose a different file
@@ -287,8 +266,8 @@ export default function AddResource() {
                     {resourceType === "pdf"
                       ? "a PDF"
                       : resourceType === "excel"
-                      ? "an Excel or CSV file"
-                      : "your file"}
+                        ? "an Excel or CSV file"
+                        : "your file"}
                   </div>
 
                   <div className="mt-1 text-xs text-neutral-400">
@@ -305,10 +284,7 @@ export default function AddResource() {
             >
               {stage === "loading" ? (
                 <>
-                  <LoaderCircle
-                    className="animate-spin"
-                    size={16}
-                  />
+                  <LoaderCircle className="animate-spin" size={16} />
                   Analyzing...
                 </>
               ) : (
@@ -325,10 +301,9 @@ export default function AddResource() {
         {stage === "loading" && (
           <div className="mt-5 rounded-xl bg-neutral-50 p-4 text-sm">
             Analyzing your learning resource…
-
             <span className="ml-2 text-neutral-400">
-              ✓ Resource identified · ✓ Concepts discovered · ●
-              Building learning map
+              ✓ Resource identified · ✓ Concepts discovered · ● Building
+              learning map
             </span>
           </div>
         )}
@@ -343,9 +318,7 @@ export default function AddResource() {
 
             <div className="mt-5 grid gap-4 sm:grid-cols-3">
               <div>
-                <div className="text-xs text-neutral-400">
-                  Resource
-                </div>
+                <div className="text-xs text-neutral-400">Resource</div>
 
                 <div className="mt-1 font-semibold">
                   {resourceType === "youtube"
@@ -359,9 +332,7 @@ export default function AddResource() {
                   Concepts identified
                 </div>
 
-                <div className="mt-1 font-semibold">
-                  27
-                </div>
+                <div className="mt-1 font-semibold">27</div>
               </div>
 
               <div>
@@ -369,25 +340,18 @@ export default function AddResource() {
                   Estimated learning time
                 </div>
 
-                <div className="mt-1 font-semibold">
-                  42 minutes
-                </div>
+                <div className="mt-1 font-semibold">42 minutes</div>
               </div>
             </div>
 
             {/* YouTube timestamp preview */}
-            {resourceType === "youtube" &&
-              timestamp.trim() && (
-                <div className="mt-4 rounded-xl bg-neutral-50 p-4">
-                  <div className="text-xs text-neutral-400">
-                    Starting point
-                  </div>
+            {resourceType === "youtube" && timestamp.trim() && (
+              <div className="mt-4 rounded-xl bg-neutral-50 p-4">
+                <div className="text-xs text-neutral-400">Starting point</div>
 
-                  <div className="mt-1 text-sm font-semibold">
-                    {timestamp}
-                  </div>
-                </div>
-              )}
+                <div className="mt-1 text-sm font-semibold">{timestamp}</div>
+              </div>
+            )}
 
             <div className="mt-6 flex flex-wrap gap-2">
               <Link
@@ -426,15 +390,10 @@ export default function AddResource() {
             "Turn weak concepts into a concrete revision plan.",
           ],
         ].map(([title, description]) => (
-          <div
-            key={title}
-            className="surface p-5"
-          >
+          <div key={title} className="surface p-5">
             <Sparkles size={17} />
 
-            <div className="mt-4 font-semibold">
-              {title}
-            </div>
+            <div className="mt-4 font-semibold">{title}</div>
 
             <p className="mt-2 text-sm leading-6 text-neutral-500">
               {description}
