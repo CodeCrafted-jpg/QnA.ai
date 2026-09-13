@@ -1,0 +1,61 @@
+# AI Tutor Project Tasks
+
+## PHASE 0: Project Setup & Environment
+- `[ ]` Initialize Next.js project (TypeScript, Tailwind, App Router)
+- `[ ]` Setup shadcn/ui and necessary components
+- `[ ]` Install and configure Framer Motion
+- `[ ]` Configure Clerk for authentication
+- `[ ]` Initialize Supabase client
+
+## PHASE 1: Database & Learning Architecture
+- `[ ]` Define and migrate schema (`users`, `learning_goals`, `learning_paths`, `path_modules`, `resources`, `video_segments`)
+- `[ ]` Define and migrate schema (`concepts`, `concept_relationships`, `resource_concepts`)
+- `[ ]` Define and migrate schema (`student_concept_mastery`, `learning_interactions`, `assessments`, `assessment_attempts`)
+- `[ ]` Build "Structured Learning" vs "Quick Learn" flow models
+
+## PHASE 2: YouTube Ingestion & Content Engine
+- `[ ]` Implement background processing flow (`PROCESSING` -> `READY`)
+- `[ ]` Implement YouTube Metadata & Transcript fetching
+- `[ ]` Implement Temporal & Semantic Chunking
+- `[ ]` Implement `lib/ai/content/embeddings.ts` (Gemini embeddings -> pgvector)
+
+## PHASE 3: AI Knowledge Engine
+- `[ ]` Implement `lib/ai/content/conceptExtractor.ts` (Gemini structured concepts)
+- `[ ]` Implement Zod validation (`ConceptSchema`) and retry logic
+- `[ ]` Implement concept deduplication and relationship building
+- `[ ]` Persist concepts and relationships to DB
+
+## PHASE 4: Timestamp-Aware Tutor
+- `[ ]` Build `app/learn/[resourceId]/page.tsx`
+- `[ ]` Build `components/video/YouTubePlayer.tsx`
+- `[ ]` Implement temporal + semantic retrieval strategy
+- `[ ]` Implement `lib/ai/content/tutor.ts` with explicit Grounding Rules
+
+## PHASE 5: Learner Engine & Mastery Model
+- `[ ]` Define Evidence-Based Mastery model (Observation, Assessment, Explanation)
+- `[ ]` Implement `lib/ai/learner/assessment.ts` (Quick Checks / Zod validated)
+- `[ ]` Implement `lib/ai/learner/misconception.ts` (Teach-back evaluation)
+- `[ ]` Track and update `student_concept_mastery` and `learning_interactions`
+
+## PHASE 6: Knowledge Map
+- `[ ]` Build `app/knowledge-map/page.tsx`
+- `[ ]` Implement `components/graph/KnowledgeGraph.tsx` (React Flow)
+- `[ ]` Connect graph nodes to Learner Engine mastery scores
+
+## PHASE 7: Adaptation Engine
+- `[ ]` Implement `lib/ai/adaptation/recommender.ts`
+- `[ ]` Build Recommendation UI (Revisions vs Unlocks)
+
+## PHASE 8: Dashboard & UX Polish
+- `[ ]` Add Framer Motion states ("Analyzing course...")
+- `[ ]` Polish Dashboard and flagship Learning Page
+
+## PHASE 9: Security & Evaluation
+- `[ ]` Enforce Supabase RLS policies
+- `[ ]` Ensure API keys are server-side only
+- `[ ]` Create `/evals` directory with 5-10 benchmark datasets
+- `[ ]` Run evaluations for extraction and RAG accuracy
+
+## PHASE 10: SIH Demo Mode & Polish
+- `[ ]` Create Preprocessed "Machine Learning Fundamentals" Demo Course
+- `[ ]` Final dry run of demo scenario (Teach-back -> mastery drop -> recommendation)

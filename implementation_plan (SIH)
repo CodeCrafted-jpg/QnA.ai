@@ -1,0 +1,143 @@
+# AI-Powered Timestamp-Aware Tutor Implementation Plan
+
+This project aims to build an AI tutor tightly integrated with video context, featuring a timestamp-aware YouTube player, a robust learner model, and an interactive knowledge graph. The system is designed to provide highly contextual answers and track learner progress dynamically.
+
+## Architecture & Tech Stack (Locked In)
+
+- **Frontend & Backend Framework:** Next.js (App Router) + TypeScript
+- **Styling:** Tailwind CSS + shadcn/ui + Framer Motion
+- **Video Player:** YouTube IFrame Player API
+- **Database & Vector Store:** Supabase (PostgreSQL + pgvector)
+- **AI/LLM Provider:** Gemini
+- **Authentication:** Clerk
+- **Knowledge Graph UI:** React Flow
+- **Validation:** Zod (for AI structured outputs and API inputs)
+- **Deployment:** Vercel
+
+*Note: You have confirmed you have a Supabase project and Clerk ready and will provide the `.env` keys when we begin coding.*
+
+## AI Engine Architecture
+
+The AI layer is structured into three distinct engines for separation of concerns and a clean SIH story:
+
+1. **Content Engine (`lib/ai/content/`)**: Understands what is being taught (Transcripts, Concepts, Relationships, Embeddings).
+2. **Learner Engine (`lib/ai/learner/`)**: Understands the student (Mastery, Misconceptions, Confidence, Interactions).
+3. **Adaptation Engine (`lib/ai/adaptation/`)**: Decides what happens next (Recommendations, Revisions, Unlocks).
+
+## Phased Implementation Roadmap
+
+### PHASE 0: Project Setup & Environment
+- Initialize Next.js project with Tailwind CSS and TypeScript (App Router).
+- Setup shadcn/ui components (cards, dialogs, tabs, progress, command, etc.).
+- Configure Clerk for authentication.
+- Initialize Supabase client using `.env` variables.
+
+---
+
+### PHASE 1: Database & Learning Architecture
+*Goal: Define the platform structure (Goals → Paths → Modules → Resources → Concepts) and robust schema.*
+
+#### Data Architecture Schema
+- `users`
+- `learning_goals`, `learning_paths`, `path_modules`
+- `resources`, `video_segments`
+- `concepts`, `concept_relationships`, `resource_concepts`
+- `student_concept_mastery`
+- `learning_interactions`, `assessments`, `assessment_attempts`
+
+#### Core Feature: Structured Learning vs Quick Learn
+- **Structured Learning**: Set a goal → AI generates a path (e.g., ML Fundamentals) → Topic assignments.
+- **Quick Learn**: Paste a URL for immediate AI analysis, with the option to "Add to Learning Path" later.
+
+---
+
+### PHASE 2: YouTube Ingestion & Content Engine
+*Goal: Fetch videos and process content.*
+
+#### Background Processing Pipeline
+Instead of blocking the UI, ingestion follows a status flow (`PROCESSING` → `READY`):
+- Fetch YouTube Metadata & Transcript
+- Chunk transcript (Temporal + Semantic boundaries)
+- **Content Engine**: Generate Gemini embeddings for pgvector.
+
+---
+
+### PHASE 3: AI Knowledge Engine
+*Goal: Extract and interlink concepts.*
+
+#### Concept Extraction & Deduplication
+- **Content Engine**: Prompt Gemini to extract structured concepts/timestamps.
+- **Zod Validation Layer**: Validate all Gemini JSON outputs against predefined schemas (e.g., `ConceptSchema`). Retry/repair if invalid.
+- Persist verified concepts and prerequisites to the graph database tables.
+
+---
+
+### PHASE 4: Timestamp-Aware Tutor
+*Goal: Allow students to ask questions anchored to current video playback with accurate context.*
+
+#### Temporal + Semantic Context Strategy
+When a student asks a question at timestamp `23:42`:
+1. **Temporal Retrieval**: Fetch surrounding timestamp chunks (e.g., `22:42` → `24:42`).
+2. **Semantic Retrieval**: Fetch top relevant chunks via pgvector.
+3. **Concept Retrieval**: Fetch current concept being discussed.
+- Combine and supply to Gemini.
+
+> [!IMPORTANT]
+> **Grounding Rules (Anti-Hallucination)**: Gemini will be explicitly prompted to answer *only* from the provided course/video context. If unsupported, it will respond: *"I couldn't find that in this section of the video. I can explain the concept more generally if you'd like."*
+
+---
+
+### PHASE 5: Learner Engine & Mastery Model
+*Goal: Track real mastery, not just exposure.*
+
+#### Evidence-Based Mastery
+Exposure (watching a video) contributes minimally to mastery. Mastery is calculated based on:
+- `observation` (watching)
+- `assessment` (Quizzes / Quick Checks)
+- `explanation` (Teach-back mechanism)
+
+#### Teach-Back & Interaction Tracking
+- **Learner Engine**: Evaluates student explanations, catching misconceptions.
+- Updates `student_concept_mastery` (`mastery_score`, `confidence_score`, `evidence_count`, `last_assessed`).
+- Logs every action to `learning_interactions` (VIDEO_WATCH, QUESTION, QUIZ, TEACH_BACK, REVISION) for audit trails.
+
+---
+
+### PHASE 6: Knowledge Map
+*Goal: Visualize the student's mastery across interconnected concepts.*
+- Use React Flow to render the prerequisite graph.
+- Color-code nodes dynamically based on the Learner Engine's mastery scores.
+
+---
+
+### PHASE 7: Adaptation Engine
+*Goal: Adaptive recommendations based on the graph.*
+- **Adaptation Engine**: Checks prerequisite mastery.
+- If a concept is weak, recommend a specific revision resource. If strong, unlock the next topic in the Learning Path.
+
+---
+
+### PHASE 8: Dashboard & UX Polish
+*Goal: Final UI enhancements.*
+- Add Framer Motion animations (e.g., "Analyzing your course...").
+- Build out the Learning Path dashboard and flagship Learning Page.
+
+---
+
+### PHASE 9: Security & Evaluation
+*Goal: Defensibility and data protection.*
+- **Security**: Supabase Row Level Security (RLS) ensuring users only see their data. API keys securely stored server-side.
+- **Evaluation Set**: Create an `/evals` directory with 5-10 video benchmarks (expected concepts, timestamps, sample Q&A) to mathematically test the AI's accuracy before the demo.
+
+---
+
+### PHASE 10: SIH Demo Mode & Polish
+*Goal: A bulletproof presentation.*
+- **Preprocessed Demo Course**: Create a fully preprocessed "Machine Learning Fundamentals" course with transcript, concepts, graph, and assessments ready to go.
+- Ensures the demo works perfectly even if APIs throttle or YouTube blocks requests during the live presentation.
+
+## Verification Plan
+1. **Zod Validation Checks:** Ensure all AI outputs strictly conform to schemas.
+2. **Grounding Tests:** Ask out-of-scope questions to verify the tutor refuses to hallucinate.
+3. **Evals Run:** Run the `/evals` benchmark dataset and verify >90% extraction and RAG accuracy.
+4. **End-to-End Demo Run:** Traverse the Demo Course, triggering a misconception, lowering mastery, and triggering an adaptive recommendation.
