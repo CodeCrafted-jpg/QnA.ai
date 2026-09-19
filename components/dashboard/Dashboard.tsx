@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useAppState } from "@/lib/state";
 import { ProgressRing } from "@/components/common/ProgressRing";
+import { GoalSetup } from "@/components/goals/GoalSetup";
 const path = [
   ["Python", "done"],
   ["Mathematics", "progress"],
@@ -19,7 +20,15 @@ const path = [
   ["Deep Learning", "locked"],
 ];
 export function Dashboard() {
-  const { mastery, recommendation } = useAppState();
+  const { recommendation, goal, isStateLoading } = useAppState();
+  if (isStateLoading) {
+    return (
+      <div className="grid min-h-[70vh] place-items-center px-6 text-sm text-neutral-500">
+        Loading your learning space...
+      </div>
+    );
+  }
+  if (!goal) return <GoalSetup />;
   return (
     <div className="mx-auto max-w-7xl px-6 py-8 lg:px-10">
       <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
@@ -56,7 +65,7 @@ export function Dashboard() {
               <span className="inline-flex items-center gap-2 rounded-full bg-[#edf6f1] px-2.5 py-1 text-xs font-semibold text-[#1f7a5a]">
                 Current Learning
               </span>
-              <h2 className="mt-5 text-2xl font-semibold">Machine Learning</h2>
+              <h2 className="mt-5 text-2xl font-semibold">{goal.title}</h2>
               <p className="mt-1 text-sm text-neutral-500">
                 Currently learning · Linear Regression
               </p>
@@ -111,7 +120,7 @@ export function Dashboard() {
           <div className="flex items-center justify-between">
             <div>
               <div className="eyebrow text-neutral-400">Learning path</div>
-              <h2 className="mt-1 text-xl font-semibold">Machine Learning</h2>
+              <h2 className="mt-1 text-xl font-semibold">{goal.title}</h2>
             </div>
             <Link
               href="/paths/ml"
