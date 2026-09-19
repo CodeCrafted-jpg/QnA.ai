@@ -8,6 +8,22 @@ export default function Goals() {
   const { goals, saveGoal, updateGoal } = useAppState();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+  const createGoal = async (goal: Parameters<typeof saveGoal>[0]) => {
+    setIsSubmitting(true);
+    setGenerationError(null);
+    const result = await saveGoal(goal);
+    setIsSubmitting(false);
+    setIsAdding(false);
+    if (result.authRequired) {
+      setGenerationError("Please sign in with Clerk before creating a learning goal.");
+    } else if (result.saveFailed) {
+      setGenerationError("We couldn't save your goal. Check your connection and try again.");
+    } else if (result.generationError) {
+      setGenerationError("Your goal was saved, but we couldn't generate the learning path yet. Try again from this page.");
+    }
+  };
   return (
     <div className="mx-auto max-w-3xl px-6 py-12 lg:px-10">
       <div className="eyebrow text-neutral-400">Learning goal</div>
@@ -15,7 +31,8 @@ export default function Goals() {
         <div><h1 className="text-4xl font-semibold tracking-tight">Your learning goals</h1><p className="mt-2 text-neutral-500">Create and manage the goals shaping your learning paths.</p></div>
         <button onClick={() => setIsAdding(true)} className="rounded-xl bg-black px-4 py-2.5 text-sm font-semibold text-white">Add New Goal</button>
       </div>
-      {isAdding && <div className="surface mt-8 p-6"><GoalForm onSave={(goal) => { saveGoal(goal); setIsAdding(false); }} onCancel={() => setIsAdding(false)} /></div>}
+      {generationError && <p className="mt-5 rounded-xl bg-[#fff6dc] px-4 py-3 text-sm text-[#80631b]">{generationError}</p>}
+      {isAdding && <div className="surface mt-8 p-6"><GoalForm onSave={createGoal} isSubmitting={isSubmitting} onCancel={() => setIsAdding(false)} /></div>}
       <div className="mt-8 space-y-4">
         {goals.map((goal) => editingId === goal.id ? (
           <div key={goal.id} className="surface p-6"><GoalForm initialGoal={goal} onSave={(updated) => { updateGoal({ ...updated, id: goal.id }); setEditingId(null); }} onCancel={() => setEditingId(null)} /></div>

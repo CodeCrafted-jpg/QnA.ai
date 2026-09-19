@@ -1,5 +1,6 @@
 "use client";
-import { createContext, startTransition, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useAuth } from "@clerk/nextjs";
 
 export type LearningGoal = {
   id: string;
@@ -8,9 +9,18 @@ export type LearningGoal = {
   objective?: string;
 };
 
+export type LearningPath = {
+  id: string;
+  goalId: string;
+  title: string;
+  description?: string;
+  version: number;
+  modules: Array<{ id: string; title: string; description?: string; position: number; topics: Array<{ id: string; title: string; description?: string; position: number }> }>;
+};
+
 export type LearningResource = {
   id: string;
-  topicId: string;
+  topicId: string | null;
   type: "youtube" | "pdf" | "excel" | "file";
   title: string;
   url?: string;
@@ -35,11 +45,13 @@ type Ctx = {
   goal: LearningGoal | null;
   goals: LearningGoal[];
   isStateLoading: boolean;
-  saveGoal: (goal: Omit<LearningGoal, "id">) => void;
+  saveGoal: (goal: Omit<LearningGoal, "id">) => Promise<{ generationError?: string; authRequired?: boolean; saveFailed?: boolean }>;
   updateGoal: (goal: LearningGoal) => void;
+  paths: LearningPath[];
 };
 const StateContext = createContext<Ctx | null>(null);
 export function AppStateProvider({ children }: { children: React.ReactNode }) {
+  const { isLoaded, isSignedIn } = useAuth();
   const [mastery, setMastery] = useState(42);
   const [showTutor, setShowTutor] = useState(true);
   const [recommendation, setRecommendation] = useState(
@@ -48,33 +60,78 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [resources, setResources] = useState<LearningResource[]>([]);
   const [isResourcesLoading, setIsResourcesLoading] = useState(true);
   const [goals, setGoals] = useState<LearningGoal[]>([]);
+  const [paths, setPaths] = useState<LearningPath[]>([]);
   const [isStateLoading, setIsStateLoading] = useState(true);
   useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem("learnwise-resources");
-      if (stored) {
-        startTransition(() =>
-          setResources(JSON.parse(stored) as LearningResource[]),
-        );
-      }
-    } catch {
-      window.localStorage.removeItem("learnwise-resources");
-    } finally {
-      startTransition(() => setIsResourcesLoading(false));
+    if (!isLoaded) return;
+    if (!isSignedIn) {
+      setIsResourcesLoading(false);
+      return;
     }
-  }, []);
+    let active = true;
+    const loadResources = async () => {
+      try {
+        const stored = window.localStorage.getItem("learnwise-resources");
+        if (stored) setResources(JSON.parse(stored) as LearningResource[]);
+        const response = await fetch("/api/resources", { credentials: "include" });
+        if (response.ok && active) {
+          const remote = (await response.json()) as Array<{ id: string; topic_id: string | null; type: LearningResource["type"]; title: string; url: string | null; duration_seconds: number | null; metadata: Record<string, unknown> }>;
+          setResources(remote.map((resource) => ({
+            id: resource.id,
+            topicId: resource.topic_id,
+            type: resource.type,
+            title: resource.title,
+            url: resource.url ?? undefined,
+            duration: resource.duration_seconds ? `${Math.round(resource.duration_seconds / 60)} min` : undefined,
+            timestamp: typeof resource.metadata.timestamp === "string" ? resource.metadata.timestamp : undefined,
+            source: typeof resource.metadata.source === "string" ? resource.metadata.source : undefined,
+          })));
+        }
+      } catch {
+        window.localStorage.removeItem("learnwise-resources");
+      } finally {
+        if (active) setIsResourcesLoading(false);
+      }
+    };
+    void loadResources();
+    return () => { active = false; };
+  }, [isLoaded, isSignedIn]);
   useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem("learnwise-goals");
-      if (stored) {
-        startTransition(() => setGoals(JSON.parse(stored) as LearningGoal[]));
-      }
-    } catch {
-      window.localStorage.removeItem("learnwise-goals");
-    } finally {
-      startTransition(() => setIsStateLoading(false));
+    if (!isLoaded) return;
+    if (!isSignedIn) {
+      setIsStateLoading(false);
+      return;
     }
-  }, []);
+    let active = true;
+    fetch("/api/paths", { credentials: "include" })
+      .then(async (response) => response.ok ? await response.json() as Array<{ id: string; goal_id: string; title: string; description: string | null; version: number; modules: LearningPath["modules"] }> : [])
+      .then((remote) => {
+        if (active) setPaths(remote.map((path) => ({ ...path, goalId: path.goal_id, description: path.description ?? undefined })));
+      })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, [isLoaded, isSignedIn]);
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn) return;
+    let active = true;
+    const loadGoals = async () => {
+      try {
+        const stored = window.localStorage.getItem("learnwise-goals");
+        if (stored) setGoals(JSON.parse(stored) as LearningGoal[]);
+        const response = await fetch("/api/goals", { credentials: "include" });
+        if (response.ok && active) {
+          const remote = (await response.json()) as Array<{ id: string; title: string; skill_level: LearningGoal["level"] | null; objective: string | null }>;
+          setGoals(remote.map((goal) => ({ id: goal.id, title: goal.title, level: goal.skill_level ?? undefined, objective: goal.objective ?? undefined })));
+        }
+      } catch {
+        window.localStorage.removeItem("learnwise-goals");
+      } finally {
+        if (active) setIsStateLoading(false);
+      }
+    };
+    void loadGoals();
+    return () => { active = false; };
+  }, [isLoaded, isSignedIn]);
   useEffect(() => {
     if (!isStateLoading) {
       window.localStorage.setItem("learnwise-goals", JSON.stringify(goals));
@@ -83,13 +140,39 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     window.localStorage.setItem("learnwise-resources", JSON.stringify(resources));
   }, [resources]);
-  const saveGoal = (input: Omit<LearningGoal, "id">) => {
-    setGoals((current) => [...current, { ...input, id: crypto.randomUUID() }]);
+  const saveGoal = async (input: Omit<LearningGoal, "id">) => {
+    if (!isLoaded || !isSignedIn) return { authRequired: true };
+    const temporaryId = crypto.randomUUID();
+    setGoals((current) => [...current, { ...input, id: temporaryId }]);
+    try {
+      const response = await fetch("/api/goals", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) });
+      const payload = await response.json() as { goal?: { id: string }; generationError?: string; error?: string; code?: string; path?: LearningPath & { goal_id?: string } };
+      if (response.status === 401 || payload.code === "AUTH_REQUIRED") {
+        setGoals((current) => current.filter((item) => item.id !== temporaryId));
+        return { authRequired: true };
+      }
+      if (!response.ok || !payload.goal) throw new Error(payload.error ?? "Could not save goal");
+      setGoals((current) => current.map((item) => item.id === temporaryId ? { ...item, id: payload.goal!.id } : item));
+      if (payload.path) {
+        const generatedPath = { ...payload.path, goalId: payload.path.goal_id ?? payload.path.goalId };
+        setPaths((current) => [generatedPath, ...current.filter((path) => path.id !== generatedPath.id)]);
+      }
+      return { generationError: payload.generationError };
+    } catch (error) {
+      setGoals((current) => current.filter((item) => item.id !== temporaryId));
+      return { generationError: error instanceof Error ? error.message : "Could not save goal", saveFailed: true };
+    }
   };
   const updateGoal = (updated: LearningGoal) => {
     setGoals((current) =>
       current.map((goal) => (goal.id === updated.id ? updated : goal)),
     );
+    void fetch(`/api/goals/${updated.id}`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updated),
+    }).catch(() => undefined);
   };
   const addResource = (
     input: Omit<LearningResource, "id"> | string,
@@ -107,6 +190,22 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         : { ...input, id: crypto.randomUUID() };
     if (!resource.title.trim()) return resource;
     setResources((current) => [resource, ...current]);
+    void fetch("/api/resources", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        topicId: resource.topicId,
+        type: resource.type,
+        title: resource.title,
+        url: resource.url,
+        metadata: { timestamp: resource.timestamp, source: resource.source },
+      }),
+    }).then(async (response) => {
+      if (!response.ok) return;
+      const saved = await response.json() as { id: string; topic_id: string | null };
+      setResources((current) => current.map((item) => item.id === resource.id ? { ...item, id: saved.id, topicId: saved.topic_id ?? item.topicId } : item));
+    }).catch(() => undefined);
     setRecommendation("Continue with your newly added resource");
     return resource;
   };
@@ -127,11 +226,12 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       isResourcesLoading,
       goal: goals[0] ?? null,
       goals,
+      paths,
       isStateLoading,
       saveGoal,
       updateGoal,
     }),
-    [mastery, showTutor, recommendation, resources, goals, isStateLoading, isResourcesLoading, getResourcesForTopic],
+    [mastery, showTutor, recommendation, resources, goals, paths, isStateLoading, isResourcesLoading, getResourcesForTopic],
   );
   return (
     <StateContext.Provider value={value}>{children}</StateContext.Provider>

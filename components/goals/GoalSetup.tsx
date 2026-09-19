@@ -9,11 +9,23 @@ const suggestions = ["Machine Learning", "Full-Stack Development", "Python", "Da
 
 export function GoalSetup() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
   const { saveGoal } = useAppState();
 
-  const createGoal = (goal: Parameters<typeof saveGoal>[0]) => {
-    saveGoal(goal);
+  const createGoal = async (goal: Parameters<typeof saveGoal>[0]) => {
+    setIsSubmitting(true);
+    setGenerationError(null);
+    const result = await saveGoal(goal);
+    setIsSubmitting(false);
     setIsOpen(false);
+    if (result.authRequired) {
+      setGenerationError("Please sign in with Clerk before creating a learning goal.");
+    } else if (result.saveFailed) {
+      setGenerationError("We couldn't save your goal. Check your connection and try again.");
+    } else if (result.generationError) {
+      setGenerationError("Your goal was saved, but we couldn't generate the learning path yet. Try again from Goals.");
+    }
   };
 
   return (
@@ -22,6 +34,7 @@ export function GoalSetup() {
         <div className="eyebrow text-neutral-400">Your learning space</div>
         <h1 className="mt-3 text-3xl font-semibold tracking-tight">What do you want to learn?</h1>
         <p className="mx-auto mt-3 max-w-xl text-neutral-500">Set your first learning goal and we&apos;ll help you build a personalized learning path around it.</p>
+        {generationError && <p className="mx-auto mt-4 max-w-xl rounded-xl bg-[#fff6dc] px-4 py-3 text-sm text-[#80631b]">{generationError}</p>}
         <button onClick={() => setIsOpen(true)} className="mt-8 inline-flex items-center gap-2 rounded-xl bg-black px-5 py-3 text-sm font-semibold text-white">
           <Plus size={16} /> Create Learning Goal
         </button>
@@ -39,7 +52,7 @@ export function GoalSetup() {
               <div><div className="eyebrow text-neutral-400">New learning goal</div><h2 id="goal-dialog-title" className="mt-1 text-2xl font-semibold">Build your learning path</h2></div>
               <button aria-label="Close" onClick={() => setIsOpen(false)} className="rounded-lg p-1 hover:bg-neutral-100"><X size={18} /></button>
             </div>
-            <GoalForm onSave={createGoal} onCancel={() => setIsOpen(false)} />
+            <GoalForm onSave={createGoal} isSubmitting={isSubmitting} onCancel={() => setIsOpen(false)} />
           </div>
         </div>
       )}

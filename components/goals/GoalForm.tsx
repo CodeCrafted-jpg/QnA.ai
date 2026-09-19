@@ -7,10 +7,12 @@ export function GoalForm({
   initialGoal,
   onSave,
   onCancel,
+  isSubmitting = false,
 }: {
   initialGoal?: LearningGoal;
-  onSave: (goal: Omit<LearningGoal, "id">) => void;
+  onSave: (goal: Omit<LearningGoal, "id">) => void | Promise<void>;
   onCancel?: () => void;
+  isSubmitting?: boolean;
 }) {
   const [title, setTitle] = useState(initialGoal?.title ?? "");
   const [level, setLevel] = useState<LearningGoal["level"]>(initialGoal?.level);
@@ -63,7 +65,7 @@ export function GoalForm({
       </div>
       <div className="flex justify-end gap-3">
         {onCancel && <button type="button" onClick={onCancel} className="rounded-xl border border-[var(--line)] px-4 py-2.5 text-sm font-semibold">Cancel</button>}
-        <button type="submit" disabled={!title.trim()} className="rounded-xl bg-black px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">Create Learning Goal</button>
+        <button type="submit" disabled={!title.trim() || isSubmitting} className="rounded-xl bg-black px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">{isSubmitting ? "Building your learning path..." : "Create Learning Goal"}</button>
       </div>
     </form>
   );
