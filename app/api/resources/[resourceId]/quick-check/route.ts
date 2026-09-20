@@ -26,11 +26,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ res
     ]);
     if (conceptError || !concept) return Response.json({ error: "Concept not found" }, { status: 404 });
     if (segmentsError || !segments?.length) return Response.json({ error: "This resource has no transcript context" }, { status: 422 });
-    const quickCheck = await generateQuickCheck({ concept, segments: (segments ?? []).map((segment) => ({ id: segment.id as string, startSeconds: Number(segment.start_seconds), endSeconds: Number(segment.end_seconds), text: segment.text as string })), topic: resource.topic_id });
-    const { data: assessment, error: assessmentError } = await supabaseAdmin.from("assessments").insert({ topic_id: resource.topic_id, concept_id: concept.id, type: "quick_check", question: quickCheck.question, options: quickCheck.options, correct_answer: quickCheck.correctAnswer, explanation: quickCheck.explanation }).select().single();
-    if (assessmentError || !assessment) throw new Error(assessmentError?.message ?? "Could not save assessment");
-    await recordLearningInteraction({ userId: user.id, topicId: resource.topic_id, conceptId: concept.id, resourceId, interactionType: "QUIZ", metadata: { assessment_id: assessment.id, event: "generated" } });
-    return Response.json({ assessment, quickCheck, concept });
+    const topicId = resource.topic_id;
+    const quickChecks = await generateQuickCheck({ concept, segments: (segments ?? []).map((segment) => ({ id: segment.id as string, startSeconds: Number(segment.start_seconds), endSeconds: Number(segment.end_seconds), text: segment.text as string })), topic: topicId });
+    const { data: assessments, error: assessmentsError } = await supabaseAdmin.from("assessments").insert(
+      quickChecks.map((qc) => ({ topic_id: topicId, concept_id: concept.id, type: "quick_check", question: qc.question, options: qc.options, correct_answer: qc.correctAnswer, explanation: qc.explanation }))
+    ).select();
+    if (assessmentsError || !assessments || assessments.length === 0) throw new Error(assessmentsError?.message ?? "Could not save assessments");
+    await recordLearningInteraction({ userId: user.id, topicId, conceptId: concept.id, resourceId, interactionType: "QUIZ", metadata: { assessment_ids: assessments.map(a => a.id), event: "generated_multiple" } });
+    return Response.json({ assessments, quickChecks, concept });
   } catch (error) {
     console.error("POST /api/resources/[resourceId]/quick-check failed", error);
     return Response.json({ error: error instanceof Error ? error.message : "Could not create Quick Check" }, { status: 400 });

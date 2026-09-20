@@ -6,6 +6,7 @@ export const TeachBackEvaluationSchema = z.object({
   feedback: z.string().trim().min(10).max(1500),
   misconceptions: z.array(z.string().trim().min(1).max(300)).max(8),
   strengths: z.array(z.string().trim().min(1).max(300)).max(8),
+  followUpQuestions: z.array(z.string().trim().min(10).max(300)).min(2).max(3),
 }).strict();
 
 export type TeachBackEvaluation = z.infer<typeof TeachBackEvaluationSchema>;
@@ -34,7 +35,7 @@ async function askGemini(prompt: string): Promise<unknown> {
 export async function evaluateTeachBack(input: TeachBackInput): Promise<TeachBackEvaluation> {
   if (!input.explanation.trim()) throw new Error("EMPTY_TEACH_BACK");
   const context = input.segments.map((segment) => segment.text).join("\n").slice(0, 30000);
-  const prompt = `Evaluate a student's teach-back using only the supplied lesson context. Score conceptual understanding from 0 to 1. Identify concrete misconceptions, but do not penalize wording or missing details that are not required by the context. Return JSON only with exactly: {"score":0.0,"feedback":"...","misconceptions":["..."],"strengths":["..."]}.\n\nCONCEPT: ${input.concept.name}\nREFERENCE DESCRIPTION: ${input.concept.description ?? "Not provided"}\nLESSON CONTEXT:\n${context}\n\nSTUDENT EXPLANATION:\n${input.explanation}`;
+  const prompt = `Evaluate a student's teach-back using only the supplied lesson context. Score conceptual understanding from 0 to 1. Identify concrete misconceptions, but do not penalize wording or missing details that are not required by the context. Also, generate 2 to 3 specific follow-up questions to deepen their understanding. Return JSON only with exactly: {"score":0.0,"feedback":"...","misconceptions":["..."],"strengths":["..."],"followUpQuestions":["..."]}.\n\nCONCEPT: ${input.concept.name}\nREFERENCE DESCRIPTION: ${input.concept.description ?? "Not provided"}\nLESSON CONTEXT:\n${context}\n\nSTUDENT EXPLANATION:\n${input.explanation}`;
   let lastError: unknown;
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {

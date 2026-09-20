@@ -46,7 +46,7 @@ function toLearningResource(resource: { id: string; topic_id: string | null; typ
 
 type TutorMessage = { question: string; answer: string; citations: Array<{ segment_id: string; label: string; startSeconds: number }> };
 type QuickCheckState = { assessmentId: string; conceptId: string; conceptName: string; question: string; options: string[]; correctAnswer: string; explanation: string };
-type TeachBackResult = { score: number; feedback: string; misconceptions: string[]; strengths: string[] };
+type TeachBackResult = { score: number; feedback: string; misconceptions: string[]; strengths: string[]; followUpQuestions?: string[] };
 type LearningConcept = { id: string; name: string; description: string | null; relevance: number; mastery: number; confidence: number; evidenceCount: number; lastAssessedAt: string | null };
 type LearningContext = { resource: { id: string; title: string; status: LearningResource["status"]; topic_id: string | null }; topic: { id: string; title: string; description: string | null } | null; concepts: LearningConcept[]; currentConcept: LearningConcept | null };
 
@@ -91,7 +91,6 @@ export function LearningRoom() {
   const routeId = String(params.resourceId ?? "linear-regression").toLowerCase();
   const isResourceRoute = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(routeId);
   const { mastery, setMastery, resources, isResourcesLoading, createResource, updateResource } = useAppState();
-  const topicResources = useMemo(() => resources.filter((resource) => resource.topicId === routeId || resource.id === routeId), [resources, routeId]);
   const [selectedResourceId, setSelectedResourceId] = useState<string | null>(null);
   const [directResource, setDirectResource] = useState<LearningResource | null>(null);
   const [resourceAccessError, setResourceAccessError] = useState<string | null>(null);
@@ -100,6 +99,7 @@ export function LearningRoom() {
   const [isAddingResource, setIsAddingResource] = useState(false);
   const [isAnalyzingConcepts, setIsAnalyzingConcepts] = useState(false);
   const [conceptError, setConceptError] = useState<string | null>(null);
+  const topicResources = useMemo(() => resources.filter((resource) => resource.topicId === routeId || resource.id === routeId), [resources, routeId]);
   const activeResource = topicResources.find((resource) => resource.id === selectedResourceId) ?? topicResources[0] ?? directResource;
   const isDirectResourceLoading = isResourceRoute && !activeResource && !resolvedTopic && !resourceAccessError;
   const contextForActiveResource = learningContext?.resource.id === activeResource?.id ? learningContext : null;
@@ -159,7 +159,8 @@ export function LearningRoom() {
   const [quick, setQuick] = useState(false);
   const [teach, setTeach] = useState(false);
   const [answer, setAnswer] = useState<number | null>(null);
-  const [quickCheck, setQuickCheck] = useState<QuickCheckState | null>(null);
+  const [quickChecks, setQuickChecks] = useState<QuickCheckState[] | null>(null);
+  const [quickCheckIndex, setQuickCheckIndex] = useState(0);
   const [isQuickLoading, setIsQuickLoading] = useState(false);
   const [quickResult, setQuickResult] = useState<boolean | null>(null);
   const [learnerError, setLearnerError] = useState<string | null>(null);
@@ -225,34 +226,45 @@ export function LearningRoom() {
     setAnswer(null);
     setQuickResult(null);
     setLearnerError(null);
-    if (quickCheck) return;
     setIsQuickLoading(true);
     try {
       const response = await fetch(`/api/resources/${activeResource.id}/quick-check`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ conceptId: currentConcept?.id }) });
-      const payload = await response.json() as { quickCheck?: { question: string; options: string[]; correctAnswer: string; explanation: string }; assessment?: { id: string }; concept?: { id: string; name: string }; error?: string };
-      if (!response.ok || !payload.quickCheck || !payload.assessment || !payload.concept) throw new Error(payload.error ?? "Could not create Quick Check");
-      setQuickCheck({ ...payload.quickCheck, assessmentId: payload.assessment.id, conceptId: payload.concept.id, conceptName: payload.concept.name });
+      const payload = await response.json() as { quickChecks?: Array<{ question: string; options: string[]; correctAnswer: string; explanation: string }>; assessments?: Array<{ id: string }>; concept?: { id: string; name: string }; error?: string };
+      if (!response.ok || !payload.quickChecks || !payload.assessments || !payload.concept) throw new Error(payload.error ?? "Could not create Quick Check");
+      setQuickChecks(payload.quickChecks.map((qc, i) => ({ ...qc, assessmentId: payload.assessments![i].id, conceptId: payload.concept!.id, conceptName: payload.concept!.name })));
+      setQuickCheckIndex(0);
     } catch (error) { setLearnerError(error instanceof Error ? error.message : "Could not create Quick Check"); }
     finally { setIsQuickLoading(false); }
   };
   const submit = async () => {
-    if (!quickCheck || answer === null) return;
+    const currentQuickCheck = quickChecks?.[quickCheckIndex];
+    if (!currentQuickCheck || answer === null) return;
     setLearnerError(null);
     try {
-      const response = await fetch(`/api/resources/${activeResource.id}/quick-check/attempt`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ assessmentId: quickCheck.assessmentId, answer: quickCheck.options[answer] }) });
+      const response = await fetch(`/api/resources/${activeResource.id}/quick-check/attempt`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ assessmentId: currentQuickCheck.assessmentId, answer: currentQuickCheck.options[answer] }) });
       const payload = await response.json() as { isCorrect?: boolean; explanation?: string; mastery?: { mastery_score: number }; error?: string };
       if (!response.ok || typeof payload.isCorrect !== "boolean") throw new Error(payload.error ?? "Could not submit Quick Check");
       setQuickResult(payload.isCorrect);
       setMastery(Number(payload.mastery?.mastery_score ?? mastery));
-      setLearnerError(payload.explanation ?? quickCheck.explanation);
+      setLearnerError(payload.explanation ?? currentQuickCheck.explanation);
     } catch (error) { setLearnerError(error instanceof Error ? error.message : "Could not submit Quick Check"); }
+  };
+  const handleNextQuickCheck = () => {
+    if (quickChecks && quickCheckIndex < quickChecks.length - 1) {
+      setQuickCheckIndex(quickCheckIndex + 1);
+      setAnswer(null);
+      setQuickResult(null);
+      setLearnerError(null);
+    } else {
+      setQuick(false);
+    }
   };
   const submitTeach = async () => {
     if (!explanation.trim() || isTeachSubmitting) return;
     setIsTeachSubmitting(true);
     setLearnerError(null);
     try {
-      const response = await fetch(`/api/resources/${activeResource.id}/teach-back`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ explanation, conceptId: currentConcept?.id ?? quickCheck?.conceptId }) });
+      const response = await fetch(`/api/resources/${activeResource.id}/teach-back`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ explanation, conceptId: currentConcept?.id ?? quickChecks?.[0]?.conceptId }) });
       const payload = await response.json() as { evaluation?: TeachBackResult; mastery?: { mastery_score: number }; error?: string };
       if (!response.ok || !payload.evaluation) throw new Error(payload.error ?? "Could not evaluate teach-back");
       setTeachResult(payload.evaluation);
@@ -321,7 +333,6 @@ export function LearningRoom() {
             </div>
           </div>
           {activeResource.status === "ready" && <button onClick={() => void analyzeConcepts()} disabled={isAnalyzingConcepts} className="rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-white/70 hover:bg-white/5 disabled:opacity-50">{isAnalyzingConcepts ? "Building knowledge map..." : activeResource.knowledgeStatus === "completed" ? "Rebuild Knowledge Map" : "Analyze Concepts"}</button>}
-          {topicResources.length > 1 && <select value={activeResource.id} onChange={(event) => setSelectedResourceId(event.target.value)} className="max-w-[210px] rounded-lg border border-white/10 bg-[#171916] px-3 py-2 text-xs text-white/70 outline-none"><option value={activeResource.id}>{activeResource.title}</option>{topicResources.filter((resource) => resource.id !== activeResource.id).map((resource) => <option key={resource.id} value={resource.id}>{resource.title}</option>)}</select>}
           <div className="hidden items-center gap-2 rounded-full border border-white/10 px-3 py-1.5 text-xs sm:flex">
             Mastery{" "}
             <span className="font-semibold text-[#8cd5af]">{isLearningContextLoading ? "..." : `${currentMastery}%`}</span>
@@ -450,14 +461,14 @@ export function LearningRoom() {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="eyebrow text-neutral-400">Quick check</div>
-                  <h2 className="mt-1 text-xl font-semibold">{quickCheck?.question ?? (isQuickLoading ? "Creating a grounded question..." : "Quick Check unavailable")}</h2>
+                  <h2 className="mt-1 text-xl font-semibold">{quickChecks?.[quickCheckIndex]?.question ?? (isQuickLoading ? "Creating a grounded question..." : "Quick Check unavailable")}</h2>
                 </div>
                 <button onClick={() => setQuick(false)}>
                   <X size={18} />
                 </button>
               </div>
               <div className="mt-5 space-y-2">
-                {(quickCheck?.options ?? []).map((option, i) => (
+                {(quickChecks?.[quickCheckIndex]?.options ?? []).map((option, i) => (
                   <button
                     key={option}
                     onClick={() => setAnswer(i)}
@@ -467,20 +478,28 @@ export function LearningRoom() {
                   </button>
                 ))}
               </div>
-              {quickResult !== null && <div className="mt-4 rounded-xl bg-[#edf6f1] p-4"><div className="font-semibold text-[#1f7a5a]">{quickResult ? "Correct" : "Not quite"}</div><div className="mt-1 text-sm text-neutral-600">{learnerError ?? quickCheck?.explanation}</div></div>}
+              {quickResult !== null && <div className="mt-4 rounded-xl bg-[#edf6f1] p-4"><div className="font-semibold text-[#1f7a5a]">{quickResult ? "Correct" : "Not quite"}</div><div className="mt-1 text-sm text-neutral-600">{learnerError ?? quickChecks?.[quickCheckIndex]?.explanation}</div></div>}
               {answer !== null && (
                 <div className="mt-5 rounded-xl bg-[#edf6f1] p-4">
                   <div className="font-semibold text-[#1f7a5a]">Answer selected</div>
                   <div className="mt-1 text-sm text-neutral-600">Submit to see grounded feedback and update evidence-based mastery.</div>
                 </div>
               )}
-              {answer !== null && (
+              {answer !== null && quickResult === null && (
                 <button
                   onClick={() => void submit()}
-                  disabled={!quickCheck || quickResult !== null}
+                  disabled={!quickChecks?.[quickCheckIndex] || quickResult !== null}
                   className="mt-4 w-full rounded-xl bg-black py-3 text-sm font-semibold text-white disabled:opacity-40"
                 >
                   Submit answer
+                </button>
+              )}
+              {quickResult !== null && (
+                <button
+                  onClick={handleNextQuickCheck}
+                  className="mt-4 w-full rounded-xl bg-black py-3 text-sm font-semibold text-white"
+                >
+                  {quickChecks && quickCheckIndex < quickChecks.length - 1 ? "Next question" : "Finish"}
                 </button>
               )}
             </motion.div>
@@ -496,7 +515,7 @@ export function LearningRoom() {
               </div>
               <div className="eyebrow text-neutral-400">Teach it back</div>
               <h2 className="mt-2 text-4xl font-semibold">
-                Explain {quickCheck?.conceptName ?? "this concept"}
+                Explain {quickChecks?.[0]?.conceptName ?? "this concept"}
                 <br />
                 in your own words.
               </h2>
@@ -522,7 +541,7 @@ export function LearningRoom() {
                   {isTeachSubmitting ? "Evaluating..." : "Submit explanation"} <ChevronRight size={16} />
                 </button>
               </div>
-              {teachResult && <div className="mt-5 rounded-xl bg-[#edf6f1] p-4 text-sm"><div className="font-semibold">Understanding score: {Math.round(teachResult.score * 100)}%</div><p className="mt-2 text-neutral-700">{teachResult.feedback}</p>{teachResult.misconceptions.length > 0 && <p className="mt-2 text-[#8b3a3a]">Review: {teachResult.misconceptions.join(" ")}</p>}</div>}
+              {teachResult && <div className="mt-5 rounded-xl bg-[#edf6f1] p-4 text-sm"><div className="font-semibold">Understanding score: {Math.round(teachResult.score * 100)}%</div><p className="mt-2 text-neutral-700">{teachResult.feedback}</p>{teachResult.misconceptions.length > 0 && <p className="mt-2 text-[#8b3a3a]">Review: {teachResult.misconceptions.join(" ")}</p>}{teachResult.followUpQuestions && teachResult.followUpQuestions.length > 0 && <div className="mt-4 border-t border-[#1f7a5a]/20 pt-3"><div className="font-semibold text-[#1f7a5a]">Follow-up questions to ponder:</div><ul className="mt-2 list-inside list-disc text-neutral-700">{teachResult.followUpQuestions.map((q, i) => <li key={i} className="mt-1">{q}</li>)}</ul></div>}</div>}
               {learnerError && <div className="mt-4 rounded-xl border border-[#c9a338]/30 bg-[#c9a338]/10 p-3 text-xs text-[#8b6500]">{learnerError}</div>}
             </div>
           </div>

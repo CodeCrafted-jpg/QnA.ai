@@ -9,6 +9,10 @@ export const QuickCheckSchema = z.object({
   conceptName: z.string().trim().min(2).max(120),
 }).strict();
 
+export const QuickCheckListSchema = z.object({
+  questions: z.array(QuickCheckSchema).min(2).max(4)
+}).strict();
+
 export type QuickCheck = z.infer<typeof QuickCheckSchema>;
 
 type AssessmentInput = {
@@ -37,16 +41,16 @@ async function askGemini(prompt: string): Promise<unknown> {
   throw new Error("ASSESSMENT_MODEL_UNAVAILABLE");
 }
 
-export async function generateQuickCheck(input: AssessmentInput): Promise<QuickCheck> {
+export async function generateQuickCheck(input: AssessmentInput): Promise<QuickCheck[]> {
   if (!input.segments.length) throw new Error("EMPTY_SEGMENTS");
   const context = input.segments.slice(0, 20).map((segment) => `[${segment.id}] ${segment.startSeconds.toFixed(1)}-${segment.endSeconds.toFixed(1)}s: ${segment.text}`).join("\n").slice(0, 30000);
-  const prompt = `Create one evidence-based multiple-choice Quick Check for the supplied concept. Use only facts explicitly supported by the transcript. Do not use outside knowledge, and do not mention information absent from the transcript. Return JSON only with exactly this shape: {"question":"...","options":["..."],"correctAnswer":"one exact option","explanation":"...","conceptName":"..."}. The correctAnswer must exactly equal one option.\n\nCONCEPT: ${input.concept.name}\nDESCRIPTION: ${input.concept.description ?? "Not provided"}\nTOPIC: ${input.topic ?? "Not provided"}\n\nTRANSCRIPT:\n${context}`;
+  const prompt = `Create 2 to 3 evidence-based multiple-choice Quick Check questions for the supplied concept. Use only facts explicitly supported by the transcript. Do not use outside knowledge, and do not mention information absent from the transcript. Return JSON only with exactly this shape: {"questions":[{"question":"...","options":["..."],"correctAnswer":"one exact option","explanation":"...","conceptName":"..."}]}. The correctAnswer must exactly equal one option.\n\nCONCEPT: ${input.concept.name}\nDESCRIPTION: ${input.concept.description ?? "Not provided"}\nTOPIC: ${input.topic ?? "Not provided"}\n\nTRANSCRIPT:\n${context}`;
   let lastError: unknown;
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      const result = QuickCheckSchema.safeParse(await askGemini(attempt ? `${prompt}\nPrevious output was invalid. Return corrected JSON only.` : prompt));
-      if (result.success && result.data.options.includes(result.data.correctAnswer) && result.data.conceptName.toLowerCase() === input.concept.name.toLowerCase()) return result.data;
-      lastError = result.success ? new Error("correctAnswer or conceptName did not match") : result.error;
+      const result = QuickCheckListSchema.safeParse(await askGemini(attempt ? `${prompt}\nPrevious output was invalid. Return corrected JSON only.` : prompt));
+      if (result.success && result.data.questions.every((q) => q.options.includes(q.correctAnswer) && q.conceptName.toLowerCase() === input.concept.name.toLowerCase())) return result.data.questions;
+      lastError = result.success ? new Error("correctAnswer or conceptName did not match for some questions") : result.error;
     } catch (error) { lastError = error; }
   }
   throw new Error(`ASSESSMENT_INVALID_OUTPUT: ${lastError instanceof Error ? lastError.message : "invalid output"}`);
