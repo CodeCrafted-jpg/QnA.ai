@@ -11,6 +11,7 @@ import {
   Send,
   Sparkles,
   X,
+  Plus,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AddResource } from "@/components/resources/AddResource";
@@ -295,7 +296,7 @@ export function LearningRoom() {
       updateResource(activeResource.id, { status: "processing", error: undefined });
       await fetch(`/api/resources/${activeResource.id}/ingest`, { method: "POST", credentials: "include" }).catch(() => undefined);
     };
-    return <div className="grid min-h-screen place-items-center bg-[#111210] px-6 text-center text-white"><div><BookOpen className="mx-auto text-[#c9a338]" size={30} /><h1 className="mt-5 text-2xl font-semibold">We couldn&apos;t prepare this resource.</h1><p className="mt-2 max-w-md text-sm leading-6 text-white/50">{activeResource.error ?? "The transcript or video could not be processed."}</p><div className="mt-6 flex flex-wrap justify-center gap-3"><button onClick={() => setIsAddingResource(true)} className="inline-flex items-center rounded-xl border border-white/20 px-4 py-3 text-sm font-semibold text-white/80 hover:bg-white/10">Add a different resource</button><button onClick={() => void retry()} className="rounded-xl bg-white px-4 py-3 text-sm font-semibold text-black">Try processing it again</button></div></div>{isAddingResource && <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4 backdrop-blur-sm"><div className="max-h-[90vh] w-full max-w-3xl overflow-auto rounded-2xl bg-[#f7f7f4] p-5 text-left text-neutral-900 sm:p-8"><AddResource topic={topicId} compact onCancel={() => setIsAddingResource(false)} onResourceAdded={(resource) => { setIsAddingResource(false); chooseResource(resource); }} /></div></div>}</div>;
+    return <div className="grid min-h-screen place-items-center bg-[#111210] px-6 text-center text-white"><div><BookOpen className="mx-auto text-[#c9a338]" size={30} /><h1 className="mt-5 text-2xl font-semibold">We couldn&apos;t prepare this resource.</h1><p className="mt-2 max-w-md text-sm leading-6 text-white/50">{activeResource.error ?? "The transcript or video could not be processed."}</p><div className="mt-6 flex flex-wrap justify-center gap-3"><button onClick={() => setIsAddingResource(true)} className="inline-flex items-center rounded-xl border border-white/20 px-4 py-3 text-sm font-semibold text-white/80 hover:bg-white/10">Add a different resource</button><button onClick={() => void retry()} className="rounded-xl bg-white px-4 py-3 text-sm font-semibold text-black">Try processing it again</button></div></div></div>;
   }
   const analyzeConcepts = async () => {
     setIsAnalyzingConcepts(true);
@@ -338,6 +339,23 @@ export function LearningRoom() {
             <span className="font-semibold text-[#8cd5af]">{isLearningContextLoading ? "..." : `${currentMastery}%`}</span>
           </div>
         </header>
+        <div className="mt-4 flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+          {topicResources.map((resource) => (
+            <button
+              key={resource.id}
+              onClick={() => chooseResource(resource)}
+              className={`whitespace-nowrap rounded-lg border px-3 py-1.5 text-xs font-medium ${activeResource.id === resource.id ? "border-white bg-white text-black" : "border-white/10 text-white/60 hover:bg-white/5 hover:text-white"}`}
+            >
+              {resource.title}
+            </button>
+          ))}
+          <button
+            onClick={() => setIsAddingResource(true)}
+            className="flex items-center gap-1 whitespace-nowrap rounded-lg border border-dashed border-white/20 px-3 py-1.5 text-xs font-medium text-white/60 hover:border-white/40 hover:text-white"
+          >
+            <Plus size={14} /> Add Resource
+          </button>
+        </div>
         {conceptError && <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#c9a338]/30 bg-[#c9a338]/10 px-4 py-3 text-xs text-[#ead58c]"><span>{conceptError}</span>{conceptError.includes("no processed transcript segments") && <button onClick={() => void reprocessResource()} className="rounded-lg bg-[#ead58c] px-3 py-2 font-semibold text-[#111210]">Reprocess video</button>}</div>}
         {activeResource.knowledgeStatus === "completed" && <div className="mt-3 rounded-xl border border-[#8cd5af]/20 bg-[#8cd5af]/10 px-4 py-3 text-xs text-[#bcebd0]">Knowledge map updated: {activeResource.knowledgeConcepts ?? 0} concepts and {activeResource.knowledgeRelationships ?? 0} relationships.</div>}
         <div className="grid gap-4 pt-4 lg:grid-cols-[1.55fr_.85fr]">
@@ -450,6 +468,13 @@ export function LearningRoom() {
         </div>
       </div>
       <AnimatePresence>
+        {isAddingResource && (
+          <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4 backdrop-blur-sm">
+            <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 15 }} className="max-h-[90vh] w-full max-w-3xl overflow-auto rounded-2xl bg-[#f7f7f4] p-5 text-left text-neutral-900 sm:p-8">
+              <AddResource topic={topicId} compact onCancel={() => setIsAddingResource(false)} onResourceAdded={(resource) => { setIsAddingResource(false); chooseResource(resource); }} />
+            </motion.div>
+          </div>
+        )}
         {quick && (
           <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4 backdrop-blur-sm">
             <motion.div
