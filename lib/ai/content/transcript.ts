@@ -18,8 +18,9 @@ type ProviderSegment = { start?: number; duration?: number; offset?: number; tex
 export function normalizeTranscript(segments: ProviderSegment[]): TranscriptSegment[] {
   return segments
     .map((segment) => {
-      const startSeconds = Number(segment.start ?? segment.offset ?? 0);
-      const duration = Number(segment.duration ?? 0);
+      const usesMilliseconds = segment.start === undefined && segment.offset !== undefined;
+      const startSeconds = Number(segment.start ?? segment.offset ?? 0) / (usesMilliseconds ? 1000 : 1);
+      const duration = Number(segment.duration ?? 0) / (usesMilliseconds ? 1000 : 1);
       return { startSeconds, endSeconds: Math.max(startSeconds, startSeconds + duration), text: String(segment.text ?? "").replace(/\s+/g, " ").trim() };
     })
     .filter((segment) => segment.text && Number.isFinite(segment.startSeconds) && Number.isFinite(segment.endSeconds))
@@ -54,6 +55,17 @@ async function fetchSupadataTranscript(videoId: string): Promise<TranscriptSegme
 
 export async function getYouTubeTranscript(videoId: string): Promise<TranscriptSegment[]> {
   let lastError: unknown;
+
+  if (process.env.SUPADATA_API_KEY) {
+    try {
+      const fallback = await fetchSupadataTranscript(videoId);
+      if (fallback) return fallback;
+    } catch (error) {
+      lastError = error;
+      console.warn("Supadata transcript fetch failed; trying YouTube", { videoId, error });
+    }
+  }
+
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
       const captions = await YoutubeTranscript.fetchTranscript(videoId);
@@ -66,13 +78,6 @@ export async function getYouTubeTranscript(videoId: string): Promise<TranscriptS
       lastError = error;
       if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, retryDelay(attempt)));
     }
-  }
-
-  try {
-    const fallback = await fetchSupadataTranscript(videoId);
-    if (fallback) return fallback;
-  } catch (error) {
-    lastError = error;
   }
 
   console.warn("YouTube transcript fetch exhausted retries", { videoId, error: lastError });
