@@ -37,6 +37,21 @@ function retryDelay(attempt: number): number {
   return 750 * 2 ** attempt;
 }
 
+async function fetchSupadataTranscript(videoId: string): Promise<TranscriptSegment[] | null> {
+  const apiKey = process.env.SUPADATA_API_KEY;
+  if (!apiKey) return null;
+
+  const response = await fetch(`https://api.supadata.ai/v1/youtube/transcript?videoId=${encodeURIComponent(videoId)}`, {
+    headers: { "x-api-key": apiKey },
+  });
+  if (!response.ok) throw new Error(`SUPADATA_TRANSCRIPT_${response.status}`);
+
+  const payload = await response.json() as { content?: ProviderSegment[] };
+  const normalized = normalizeTranscript(payload.content ?? []);
+  if (!normalized.length) throw new Error("SUPADATA_TRANSCRIPT_EMPTY");
+  return normalized;
+}
+
 export async function getYouTubeTranscript(videoId: string): Promise<TranscriptSegment[]> {
   let lastError: unknown;
   for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -52,6 +67,14 @@ export async function getYouTubeTranscript(videoId: string): Promise<TranscriptS
       if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, retryDelay(attempt)));
     }
   }
+
+  try {
+    const fallback = await fetchSupadataTranscript(videoId);
+    if (fallback) return fallback;
+  } catch (error) {
+    lastError = error;
+  }
+
   console.warn("YouTube transcript fetch exhausted retries", { videoId, error: lastError });
   throw new Error("TRANSCRIPT_UNAVAILABLE");
 }
